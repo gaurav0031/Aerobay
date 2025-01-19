@@ -3,36 +3,35 @@ import React, { useState, useEffect } from 'react';
 const Tap = () => {
   const [state, setState] = useState('default'); // "default", "testing", "results"
   const [tapCount, setTapCount] = useState(0);
-  const [round, setRound] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(0); // Time left in seconds
   const [results, setResults] = useState({ healthy: 0, parkinsons: 0 });
 
   const startTest = () => {
     setState('testing');
     setTapCount(0);
-    setRound(0);
+    setTimeLeft(15); // 15 seconds for the test
   };
 
   useEffect(() => {
     let interval;
-    if (state === 'testing' && round < 10) {
+    if (state === 'testing' && timeLeft > 0) {
       interval = setInterval(() => {
-        setRound((prev) => prev + 1);
-      }, 1000); // 1-second interval
-    } else if (round === 10) {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000); // Decrease time every second
+    } else if (timeLeft === 0 && state === 'testing') {
       calculateResults();
-      clearInterval(interval);
     }
     return () => clearInterval(interval);
-  }, [state, round]);
+  }, [state, timeLeft]);
 
   const handleTap = () => {
-    if (state === 'testing' && round > 0 && round <= 10) {
+    if (state === 'testing' && timeLeft > 0) {
       setTapCount((prev) => prev + 1);
     }
   };
 
   const calculateResults = () => {
-    const healthyScore = (tapCount / 10) * 100;
+    const healthyScore = (tapCount / 30) * 100; // Adjust calculation for 15 seconds
     const parkinsonsScore = 100 - healthyScore;
     setResults({ healthy: Math.round(healthyScore), parkinsons: Math.round(parkinsonsScore) });
     setState('results');
@@ -41,7 +40,7 @@ const Tap = () => {
   const resetTest = () => {
     setState('default');
     setTapCount(0);
-    setRound(0);
+    setTimeLeft(0);
     setResults({ healthy: 0, parkinsons: 0 });
   };
 
@@ -50,25 +49,26 @@ const Tap = () => {
       {state === 'default' && (
         <>
           <h2>Tap Speed Test</h2>
-          <p>Tap on the dots as they appear. You have 10 chances!</p>
+          <p>Tap on the dots as many times as you can in 15 seconds!</p>
           <button onClick={startTest} style={buttonStyle}>
             Start Test
           </button>
         </>
       )}
 
-      {state === 'testing' && round <= 10 && (
+      {state === 'testing' && (
         <div style={{ ...clickAreaStyle, position: 'relative' }} onClick={handleTap}>
-          {round > 0 && round <= 10 && (
-            <div style={dotStyle}></div>
-          )}
+          <p style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '18px' }}>
+            Time Left: {timeLeft}s
+          </p>
+          <div style={dotStyle}></div>
         </div>
       )}
 
       {state === 'results' && (
         <>
           <h2>Results</h2>
-          <p>Taps Registered: {tapCount} out of 10</p>
+          <p>Taps Registered: {tapCount}</p>
           <p>Healthy: {results.healthy}%</p>
           <p>Parkinson’s: {results.parkinsons}%</p>
           <button onClick={resetTest} style={buttonStyle}>
@@ -97,6 +97,7 @@ const clickAreaStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  position: 'relative',
 };
 
 const dotStyle = {
@@ -104,7 +105,6 @@ const dotStyle = {
   height: '30px',
   backgroundColor: 'red',
   borderRadius: '50%',
-  position: 'absolute',
 };
 
 export default Tap;
